@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CheatTable CheatEngineTableVersion="29">
+  <CheatEntries>
+    <CheatEntry>
+      <ID>14</ID>
+      <Description>"mole"</Description>
+      <LastState/>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{$lua}
+arrx = {}
+arry = {}
+flagarr = {}
+xAddy = 0
+yAddy = 0
+found = false
+delqueueX = 0
+delqueueY = 0
+
+needRelease = false
+
+function findX(h)
+   local ix = readInteger(h)
+
+   if ix == nil then
+      return 0
+   end
+
+   local doubleval = readDouble(ix)
+
+   if doubleval == nil then
+      return 0
+   end
+
+   local valx = math.floor(doubleval)
+
+   if flagarr[ix] == nil then
+      flagarr[ix] = 0
+      arrx[ix] = valx
+   elseif arrx[ix] &gt; valx then
+      flagarr[ix] = flagarr[ix] + 1
+      arrx[ix] = valx
+   end
+
+   if flagarr[ix] == 3 then
+      found = true
+      xAddy = ix
+      yAddy = ix + 8
+      arrx = {}
+      arry = {}
+      flagarr = {}
+   end
+end
+
+function displaceObj(h)
+   local ix = readInteger(h)
+
+   if ix == nil then
+      return 0
+   end
+
+   local doubleval = readDouble(ix)
+
+   if doubleval == nil then
+      return 0
+   end
+
+   local valx = math.floor(doubleval)
+
+   if valx == nil then
+      return 0
+   end
+
+   if valx == delqueueX then
+      local iy = ix + 8
+
+      local doublevalY = readDouble(iy)
+
+      if doublevalY == nil then
+         return 0
+      end
+
+      local valy = math.floor(doublevalY)
+
+      if valy == delqueueY then
+         writeDouble(ix, 0)
+         writeDouble(iy, 0)
+         --showMessage('object removed')
+         needKeyReleaseBecauseObjectRemoved = true
+      end
+   end
+end
+
+function myfunction(h)
+   if not (isKeyPressed(VK_LEFT) or isKeyPressed(VK_RIGHT) or isKeyPressed(VK_UP) or isKeyPressed(VK_DOWN)) then
+      return 0
+   end
+
+   if isKeyPressed(VK_C) then
+      if not needRelease then
+         found = false
+         findX(h)
+      end
+
+      if found then
+         needRelease = true
+         showMessage('Got it!\n\nx: ' .. xAddy .. '\ny: ' .. yAddy)
+      end
+   else
+       needRelease = false
+   end
+
+   if found then
+      if isKeyPressed(VK_V) and not needKeyReleaseBecauseObjectRemoved then
+         if isKeyPressed(VK_LEFT) or isKeyPressed(VK_A) then
+            delqueueX = math.floor(readDouble(xAddy)) - 1
+            delqueueY = math.floor(readDouble(yAddy))
+            displaceObj(h)
+         elseif isKeyPressed(VK_RIGHT) or isKeyPressed(VK_D) then
+            delqueueX = math.floor(readDouble(xAddy)) + 1
+            delqueueY = math.floor(readDouble(yAddy))
+            displaceObj(h)
+         elseif isKeyPressed(VK_UP) or isKeyPressed(VK_W) then
+            delqueueX = math.floor(readDouble(xAddy))
+            delqueueY = math.floor(readDouble(yAddy)) - 1
+            displaceObj(h)
+         elseif isKeyPressed(VK_DOWN) or isKeyPressed(VK_S) then
+            delqueueX = math.floor(readDouble(xAddy))
+            delqueueY = math.floor(readDouble(yAddy)) + 1
+            displaceObj(h)
+         end
+      elseif not isKeyPressed(VK_V) and needKeyReleaseBecauseObjectRemoved then
+         needKeyReleaseBecauseObjectRemoved = false
+      end
+   end
+
+   return 0
+end
+{$asm}
+
+loadlibrary(luaclient-i386.dll)
+luacall(openLuaServer('CELUASERVER'))
+
+CELUA_ServerName:
+db 'CELUASERVER',0
+
+[ENABLE]
+alloc(functionid,4)
+alloc(functionname,11)
+
+functionid:
+dd 0
+
+functionname:
+db 'myfunction',0
+
+aobscanmodule(myhook, Baba Is You.exe,F2 0F 10 0C D0 F2 0F 2C D1 66 0F 6E C2 F3 0F E6 C0 66 0F 2E C8 9F F6 C4 44 7A 20)
+registersymbol(myhook)
+alloc(newmem, 1024, "Baba Is You.exe")
+registersymbol(newmem)
+
+alloc(addycontainer, 4)
+registersymbol(addycontainer)
+addycontainer:
+dd 0
+
+myhook:
+jmp newmem
+
+newmem:
+
+push ecx
+lea ecx, [eax+edx*8]
+mov [addycontainer], ecx
+pop ecx
+
+push edx
+push ecx
+
+mov ecx,[functionid]
+test ecx,ecx
+jne short hasrefid
+
+push eax
+push functionname
+call CELUA_GetFunctionReferenceFromName
+mov [functionid],eax
+mov ecx,eax
+pop eax
+
+hasrefid:
+
+push ebp
+mov ebp,esp
+sub esp,4
+
+push eax
+mov eax, addycontainer
+mov [ebp-4], eax
+
+push 0
+lea edx,[ebp-4]
+push edx
+push 1
+push ecx
+
+call CELUA_ExecuteFunctionByReference
+
+pop eax
+mov esp,ebp
+pop ebp
+
+pop ecx
+pop edx
+
+movsd xmm1,[eax+edx*8]
+jmp myhook+5
+
+[DISABLE]
+myhook:
+db F2 0F 10 0C D0
+unregistersymbol(myhook)
+
+dealloc(newmem)
+unregistersymbol(newmem)
+
+dealloc(addycontainer)
+unregistersymbol(addycontainer)
+
+</AssemblerScript>
+      <CheatEntries>
+        <CheatEntry>
+          <ID>15</ID>
+          <Description>"README (Tutorial)"</Description>
+          <LastState/>
+          <VariableType>Auto Assembler Script</VariableType>
+          <AssemblerScript>{$lua}
+--[[
+Tutorial:
+This is a hack that let's you dig through tiles
+
+1. activate hack
+2. press C + move 3 steps to the left
+   A message box should confirm that it worked
+3. To use the hack, move in front of the block and press V
+   You have to keep pressing the arrowbutton or W/A/S/D in that direction while
+       pressing V, so you may continue to move with Baba if no collision occures
+   1x pressing V = 1 block to be removed, so you need the re press the button
+      each time you want to remove a block
+]]--
+{$asm}
+[ENABLE]
+[DISABLE]
+</AssemblerScript>
+        </CheatEntry>
+      </CheatEntries>
+    </CheatEntry>
+  </CheatEntries>
+  <CheatCodes>
+    <CodeEntry>
+      <Description>Change of movsd xmm1,[eax+00000108]</Description>
+      <AddressString>Baba Is You.exe+106308</AddressString>
+      <Before>
+        <Byte>0F</Byte>
+        <Byte>11</Byte>
+        <Byte>4C</Byte>
+        <Byte>24</Byte>
+        <Byte>38</Byte>
+      </Before>
+      <Actual>
+        <Byte>F2</Byte>
+        <Byte>0F</Byte>
+        <Byte>10</Byte>
+        <Byte>88</Byte>
+        <Byte>08</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>8B</Byte>
+        <Byte>44</Byte>
+        <Byte>24</Byte>
+        <Byte>10</Byte>
+        <Byte>F2</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of movsd xmm1,[eax+edx*8]</Description>
+      <AddressString>Baba Is You.exe+204336</AddressString>
+      <Before>
+        <Byte>0F</Byte>
+        <Byte>57</Byte>
+        <Byte>C9</Byte>
+        <Byte>EB</Byte>
+        <Byte>05</Byte>
+      </Before>
+      <Actual>
+        <Byte>F2</Byte>
+        <Byte>0F</Byte>
+        <Byte>10</Byte>
+        <Byte>0C</Byte>
+        <Byte>D0</Byte>
+      </Actual>
+      <After>
+        <Byte>F2</Byte>
+        <Byte>0F</Byte>
+        <Byte>2C</Byte>
+        <Byte>D1</Byte>
+        <Byte>66</Byte>
+      </After>
+    </CodeEntry>
+  </CheatCodes>
+  <UserdefinedSymbols/>
+</CheatTable>
