@@ -13,7 +13,7 @@ player can be easily teleported to a less disturbing position.
 
 ## Video
 
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/g1MOEgDb8bA/0.jpg)](http://www.youtube.com/watch?v=g1MOEgDb8bA "Baba Is You Mole Mod Dig through tiles")
+https://github.com/Meloweh/MoleDiggerMod/assets/49780209/32c89bfd-8de7-486e-8f15-f9ff8272a703
 
 ## Languages
 - Lua
